@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "websocket-codec",
+    "websocket-lite"
+]
+
+[profile.bench]
+debug = true

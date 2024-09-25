@@ -281,7 +281,8 @@ impl Decoder for MessageCodec {
             let opcode = if opcode == 0 {
                 None
             } else {
-                let opcode = Opcode::try_from(opcode).ok_or_else(|| format!("opcode {} is not supported", opcode))?;
+                let opcode = Opcode::try_from(opcode)
+                    .ok_or_else(|| format!("opcode {} is not supported", opcode))?;
                 if opcode.is_control() && data_len >= 126 {
                     return Err(format!(
                         "control frames must be shorter than 126 bytes ({} bytes is too long)",
@@ -300,7 +301,11 @@ impl Decoder for MessageCodec {
                         break (opcode, data);
                     }
 
-                    return Err(format!("continuation frame must have continuation opcode, not {:?}", opcode).into());
+                    return Err(format!(
+                        "continuation frame must have continuation opcode, not {:?}",
+                        opcode
+                    )
+                    .into());
                 }
 
                 partial_data.extend_from_slice(&data);
@@ -339,7 +344,11 @@ impl<'a> Encoder<&'a Message> for MessageCodec {
     type Error = Error;
 
     fn encode(&mut self, item: &Message, dst: &mut BytesMut) -> Result<()> {
-        let mask = if self.use_mask { Some(Mask::new()) } else { None };
+        let mask = if self.use_mask {
+            Some(Mask::new())
+        } else {
+            None
+        };
         let header = item.header(mask);
         header.write_to_bytes(dst);
 

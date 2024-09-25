@@ -41,14 +41,22 @@ impl TryFrom<DataLength> for u64 {
             DataLength::Small(n) => Ok(u64::from(n)),
             DataLength::Medium(n) => {
                 if n <= 125 {
-                    return Err(format!("payload length {} should not be represented using 16 bits", n).into());
+                    return Err(format!(
+                        "payload length {} should not be represented using 16 bits",
+                        n
+                    )
+                    .into());
                 }
 
                 Ok(u64::from(n))
             }
             DataLength::Large(n) => {
                 if n <= 65535 {
-                    return Err(format!("payload length {} should not be represented using 64 bits", n).into());
+                    return Err(format!(
+                        "payload length {} should not be represented using 64 bits",
+                        n
+                    )
+                    .into());
                 }
 
                 if n >= 0x8000_0000_0000_0000 {
@@ -184,7 +192,10 @@ impl FrameHeader {
 
                 header_len += 8;
 
-                (&buf[10..], DataLength::Large(BigEndian::read_u64(&buf[2..10])))
+                (
+                    &buf[10..],
+                    DataLength::Large(BigEndian::read_u64(&buf[2..10])),
+                )
             }
             126 => {
                 if buf.len() < 4 {
@@ -193,7 +204,10 @@ impl FrameHeader {
 
                 header_len += 2;
 
-                (&buf[4..], DataLength::Medium(BigEndian::read_u16(&buf[2..4])))
+                (
+                    &buf[4..],
+                    DataLength::Medium(BigEndian::read_u16(&buf[2..4])),
+                )
             }
             n => {
                 assert!(n < 126);
@@ -301,10 +315,12 @@ impl Decoder for FrameHeaderCodec {
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<FrameHeader>> {
         use bytes::Buf;
 
-        Ok(FrameHeader::parse_slice(src.chunk()).map(|(header, header_len)| {
-            src.advance(header_len);
-            header
-        }))
+        Ok(
+            FrameHeader::parse_slice(src.chunk()).map(|(header, header_len)| {
+                src.advance(header_len);
+                header
+            }),
+        )
     }
 }
 

@@ -110,7 +110,10 @@ impl From<CloseCode> for u16 {
             CloseCode::Restart => 1012,
             CloseCode::Again => 1013,
             CloseCode::Tls => 1015,
-            CloseCode::Reserved(code) | CloseCode::Iana(code) | CloseCode::Library(code) | CloseCode::Bad(code) => code,
+            CloseCode::Reserved(code)
+            | CloseCode::Iana(code)
+            | CloseCode::Library(code)
+            | CloseCode::Bad(code) => code,
         }
     }
 }

@@ -2,14 +2,15 @@ use std::fmt::Write;
 use std::{result, str};
 
 use base64::display::Base64Display;
+use base64::Engine;
 use bytes::{Buf, BytesMut};
 use httparse::{Header, Response};
-use sha1::Sha1;
+use sha1_smol::Sha1;
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{Error, Result};
 
-type Sha1Digest = [u8; sha1::DIGEST_LENGTH];
+type Sha1Digest = [u8; sha1_smol::DIGEST_LENGTH];
 
 fn build_ws_accept(key: &str) -> Sha1Digest {
     let mut s = Sha1::new();
@@ -18,7 +19,10 @@ fn build_ws_accept(key: &str) -> Sha1Digest {
     s.digest().bytes()
 }
 
-fn header<'a, 'header: 'a>(headers: &'a [Header<'header>], name: &'a str) -> result::Result<&'header [u8], String> {
+fn header<'a, 'header: 'a>(
+    headers: &'a [Header<'header>],
+    name: &'a str,
+) -> result::Result<&'header [u8], String> {
     let header = headers
         .iter()
         .find(|header| header.name.eq_ignore_ascii_case(name))
@@ -49,12 +53,16 @@ fn validate_server_response(expected_ws_accept: &Sha1Digest, data: &[u8]) -> Res
 
     let ws_accept_header = header(response.headers, "Sec-WebSocket-Accept")?;
     let mut ws_accept = Sha1Digest::default();
-    base64::decode_config_slice(&ws_accept_header, base64::STANDARD, &mut ws_accept)?;
+    base64::engine::GeneralPurpose::decode_slice(
+        &base64::engine::general_purpose::STANDARD,
+        &ws_accept_header,
+        &mut ws_accept,
+    )?;
     if expected_ws_accept != &ws_accept {
         return Err(format!(
             "server responded with incorrect Sec-WebSocket-Accept header: expected {expected}, got {actual}",
-            expected = Base64Display::with_config(expected_ws_accept, base64::STANDARD),
-            actual = Base64Display::with_config(&ws_accept, base64::STANDARD),
+            expected = Base64Display::new(expected_ws_accept, &base64::engine::general_purpose::STANDARD),
+            actual = Base64Display::new(&ws_accept, &base64::engine::general_purpose::STANDARD),
         )
         .into());
     }
@@ -93,7 +101,9 @@ impl ClientRequest {
     where
         F: Fn(&'static str) -> Option<&'a str> + 'a,
     {
-        let header = |name| header(name).ok_or_else(|| format!("client didn't provide {name} header", name = name));
+        let header = |name| {
+            header(name).ok_or_else(|| format!("client didn't provide {name} header", name = name))
+        };
 
         let check_header = |name, expected| {
             let actual = header(name)?;
@@ -134,13 +144,20 @@ impl ClientRequest {
 
     /// Copies the value that the client expects to see in the server's `Sec-WebSocket-Accept` header into a `String`.
     pub fn ws_accept_buf(&self, s: &mut String) {
-        base64::encode_config_buf(&self.ws_accept, base64::STANDARD, s);
+        base64::engine::GeneralPurpose::encode_string(
+            &base64::engine::general_purpose::STANDARD,
+            &self.ws_accept,
+            s,
+        );
     }
 
     /// Returns the value that the client expects to see in the server's `Sec-WebSocket-Accept` header.
     #[must_use]
     pub fn ws_accept(&self) -> String {
-        base64::encode_config(&self.ws_accept, base64::STANDARD)
+        base64::engine::GeneralPurpose::encode(
+            &base64::engine::general_purpose::STANDARD,
+            &self.ws_accept,
+        )
     }
 }
 

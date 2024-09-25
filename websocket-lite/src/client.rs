@@ -2,6 +2,7 @@ use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream as StdTcpStream};
 use std::{fmt, mem, result, str};
 
+use base64::Engine;
 use futures_util::StreamExt;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream as TokioTcpStream;
@@ -10,7 +11,8 @@ use url::Url;
 use websocket_codec::UpgradeCodec;
 
 use crate::{
-    sync, AsyncClient, AsyncConnector, AsyncMaybeTlsStream, Client, Connector, MaybeTlsStream, MessageCodec, Result,
+    sync, AsyncClient, AsyncConnector, AsyncMaybeTlsStream, Client, Connector, MaybeTlsStream,
+    MessageCodec, Result,
 };
 
 fn replace_codec<T, C1, C2>(framed: Framed<T, C1>, codec: C2) -> Framed<T, C2>
@@ -42,7 +44,12 @@ fn make_key(key: Option<[u8; 16]>, key_base64: &mut [u8; 24]) -> &str {
     let key_bytes = key.unwrap_or_else(rand::random);
     assert_eq!(
         24,
-        base64::encode_config_slice(&key_bytes, base64::STANDARD, key_base64)
+        base64::engine::GeneralPurpose::encode_slice(
+            &base64::engine::general_purpose::STANDARD,
+            &key_bytes,
+            key_base64
+        )
+        .unwrap()
     );
 
     str::from_utf8(key_base64).unwrap()
@@ -217,7 +224,10 @@ impl ClientBuilder {
     /// # Errors
     ///
     /// This method returns an `Err` result if writing or reading from the stream fails.
-    pub async fn async_connect_on<S: AsyncRead + AsyncWrite + Unpin>(self, mut stream: S) -> Result<AsyncClient<S>> {
+    pub async fn async_connect_on<S: AsyncRead + AsyncWrite + Unpin>(
+        self,
+        mut stream: S,
+    ) -> Result<AsyncClient<S>> {
         let mut key_base64 = [0; 24];
         let key = make_key(self.key, &mut key_base64);
         let upgrade_codec = UpgradeCodec::new(key);
@@ -245,7 +255,9 @@ impl ClientBuilder {
         Write::write_all(&mut stream, request.as_bytes())?;
 
         let mut framed = sync::Framed::new(stream, upgrade_codec);
-        framed.receive()?.ok_or_else(|| "no HTTP Upgrade response".to_owned())?;
+        framed
+            .receive()?
+            .ok_or_else(|| "no HTTP Upgrade response".to_owned())?;
         Ok(framed.replace_codec(MessageCodec::client()))
     }
 
@@ -266,6 +278,7 @@ mod tests {
     use std::task::{Context, Poll};
     use std::{fmt, io, result, str};
 
+    use base64::Engine;
     use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
     use crate::ClientBuilder;
@@ -311,13 +324,21 @@ mod tests {
     }
 
     impl<R: AsyncRead + Unpin, W: Unpin> AsyncRead for ReadWritePair<R, W> {
-        fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+        fn poll_read(
+            self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            buf: &mut ReadBuf<'_>,
+        ) -> Poll<io::Result<()>> {
             Pin::new(&mut self.get_mut().0).poll_read(cx, buf)
         }
     }
 
     impl<R: Unpin, W: AsyncWrite + Unpin> AsyncWrite for ReadWritePair<R, W> {
-        fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+        fn poll_write(
+            self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            buf: &[u8],
+        ) -> Poll<io::Result<usize>> {
             Pin::new(&mut self.get_mut().1).poll_write(cx, buf)
         }
 
@@ -350,7 +371,10 @@ mod tests {
         let mut output = Vec::new();
 
         ClientBuilder::new("ws://localhost:8000/stream?query")?
-            .key(&base64::decode(b"dGhlIHNhbXBsZSBub25jZQ==")?)
+            .key(&base64::engine::GeneralPurpose::decode(
+                &base64::engine::general_purpose::STANDARD,
+                b"dGhlIHNhbXBsZSBub25jZQ==",
+            )?)
             .async_connect_on(ReadWritePair(&mut input, &mut output))
             .await
             .unwrap();
@@ -365,7 +389,10 @@ mod tests {
         let mut output = Vec::new();
 
         ClientBuilder::new("ws://localhost:8000/stream?query")?
-            .key(&base64::decode(b"dGhlIHNhbXBsZSBub25jZQ==")?)
+            .key(&base64::engine::GeneralPurpose::decode(
+                &base64::engine::general_purpose::STANDARD,
+                b"dGhlIHNhbXBsZSBub25jZQ==",
+            )?)
             .connect_on(ReadWritePair(&mut input, &mut output))?;
 
         assert_eq!(REQUEST, str::from_utf8(&output)?);

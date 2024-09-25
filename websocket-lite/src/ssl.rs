@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
-use std::io::{Read, Write};
-use std::net::TcpStream as StdTcpStream;
+// use std::io::{Read, Write};
+// use std::net::TcpStream as StdTcpStream;
 use std::pin::Pin;
 #[cfg(feature = "__ssl-rustls")]
 use std::sync::Arc;
@@ -14,13 +14,8 @@ use crate::Result;
 
 #[cfg(all(feature = "ssl-native-tls", feature = "__ssl-rustls"))]
 compile_error!("Only one TLS backend may be enabled at once");
-#[cfg(all(
-    feature = "ssl-rustls-webpki-roots",
-    feature = "ssl-rustls-native-roots"
-))]
-compile_error!(
-    "Only one of ssl-rustls-webpki-roots and ssl-rustls-native-roots may be enabled at once"
-);
+#[cfg(all(feature = "ssl-rustls-webpki-roots", feature = "ssl-rustls-native-roots"))]
+compile_error!("Only one of ssl-rustls-webpki-roots and ssl-rustls-native-roots may be enabled at once");
 
 /// A reusable TLS connector for wrapping streams.
 #[derive(Clone)]
@@ -36,7 +31,10 @@ pub enum Connector {
 }
 
 impl Debug for Connector {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result {
         match self {
             Self::Plain => f.write_str("Connector::Plain"),
             #[cfg(feature = "ssl-native-tls")]
@@ -61,7 +59,10 @@ pub enum AsyncConnector {
 }
 
 impl Debug for AsyncConnector {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result {
         match self {
             Self::Plain => f.write_str("AsyncConnector::Plain"),
             #[cfg(feature = "ssl-native-tls")]
@@ -117,7 +118,10 @@ impl AsyncWrite for AsyncMaybeTlsStream {
         }
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+    fn poll_flush(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<io::Result<()>> {
         match &mut self.get_mut().inner {
             AsyncMaybeTlsStreamInner::Plain(ref mut s) => Pin::new(s).poll_flush(cx),
             #[cfg(feature = "ssl-native-tls")]
@@ -127,7 +131,10 @@ impl AsyncWrite for AsyncMaybeTlsStream {
         }
     }
 
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<io::Result<()>> {
         match &mut self.get_mut().inner {
             AsyncMaybeTlsStreamInner::Plain(ref mut s) => Pin::new(s).poll_shutdown(cx),
             #[cfg(feature = "ssl-native-tls")]
@@ -138,53 +145,59 @@ impl AsyncWrite for AsyncMaybeTlsStream {
     }
 }
 
-#[allow(clippy::large_enum_variant)]
-enum MaybeTlsStreamInner {
-    Plain(StdTcpStream),
-    #[cfg(feature = "ssl-native-tls")]
-    NativeTls(native_tls::TlsStream<StdTcpStream>),
-    #[cfg(feature = "__ssl-rustls")]
-    Rustls(rustls::StreamOwned<rustls::ClientSession, StdTcpStream>),
-}
+// #[allow(clippy::large_enum_variant)]
+// enum MaybeTlsStreamInner {
+//     Plain(StdTcpStream),
+//     #[cfg(feature = "ssl-native-tls")]
+//     NativeTls(native_tls::TlsStream<StdTcpStream>),
+//     #[cfg(feature = "__ssl-rustls")]
+//     Rustls(rustls::StreamOwned<rustls::ClientSession, StdTcpStream>),
+// }
 
-/// A stream that might be protected with TLS.
-pub struct MaybeTlsStream {
-    inner: MaybeTlsStreamInner,
-}
+// /// A stream that might be protected with TLS.
+// pub struct MaybeTlsStream {
+//     inner: MaybeTlsStreamInner,
+// }
 
-impl Read for MaybeTlsStream {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        match self.inner {
-            MaybeTlsStreamInner::Plain(ref mut s) => s.read(buf),
-            #[cfg(feature = "ssl-native-tls")]
-            MaybeTlsStreamInner::NativeTls(ref mut s) => s.read(buf),
-            #[cfg(feature = "__ssl-rustls")]
-            MaybeTlsStreamInner::Rustls(ref mut s) => s.read(buf),
-        }
-    }
-}
+// impl Read for MaybeTlsStream {
+//     fn read(
+//         &mut self,
+//         buf: &mut [u8],
+//     ) -> io::Result<usize> {
+//         match self.inner {
+//             MaybeTlsStreamInner::Plain(ref mut s) => s.read(buf),
+//             #[cfg(feature = "ssl-native-tls")]
+//             MaybeTlsStreamInner::NativeTls(ref mut s) => s.read(buf),
+//             #[cfg(feature = "__ssl-rustls")]
+//             MaybeTlsStreamInner::Rustls(ref mut s) => s.read(buf),
+//         }
+//     }
+// }
 
-impl Write for MaybeTlsStream {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match self.inner {
-            MaybeTlsStreamInner::Plain(ref mut s) => s.write(buf),
-            #[cfg(feature = "ssl-native-tls")]
-            MaybeTlsStreamInner::NativeTls(ref mut s) => s.write(buf),
-            #[cfg(feature = "__ssl-rustls")]
-            MaybeTlsStreamInner::Rustls(ref mut s) => s.write(buf),
-        }
-    }
+// impl Write for MaybeTlsStream {
+//     fn write(
+//         &mut self,
+//         buf: &[u8],
+//     ) -> io::Result<usize> {
+//         match self.inner {
+//             MaybeTlsStreamInner::Plain(ref mut s) => s.write(buf),
+//             #[cfg(feature = "ssl-native-tls")]
+//             MaybeTlsStreamInner::NativeTls(ref mut s) => s.write(buf),
+//             #[cfg(feature = "__ssl-rustls")]
+//             MaybeTlsStreamInner::Rustls(ref mut s) => s.write(buf),
+//         }
+//     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        match self.inner {
-            MaybeTlsStreamInner::Plain(ref mut s) => s.flush(),
-            #[cfg(feature = "ssl-native-tls")]
-            MaybeTlsStreamInner::NativeTls(ref mut s) => s.flush(),
-            #[cfg(feature = "__ssl-rustls")]
-            MaybeTlsStreamInner::Rustls(ref mut s) => s.flush(),
-        }
-    }
-}
+//     fn flush(&mut self) -> io::Result<()> {
+//         match self.inner {
+//             MaybeTlsStreamInner::Plain(ref mut s) => s.flush(),
+//             #[cfg(feature = "ssl-native-tls")]
+//             MaybeTlsStreamInner::NativeTls(ref mut s) => s.flush(),
+//             #[cfg(feature = "__ssl-rustls")]
+//             MaybeTlsStreamInner::Rustls(ref mut s) => s.flush(),
+//         }
+//     }
+// }
 
 impl Connector {
     /// Creates a new `Connector` with the underlying TLS library specified in the feature flags.
@@ -204,7 +217,9 @@ impl Connector {
         }
         #[cfg(feature = "ssl-native-tls")]
         {
-            Ok(Self::NativeTls(native_tls::TlsConnector::new()?))
+            Ok(Self::NativeTls(
+                native_tls::TlsConnector::new()?,
+            ))
         }
         #[cfg(feature = "ssl-rustls-webpki-roots")]
         {
@@ -221,33 +236,40 @@ impl Connector {
                 Ok(store) | Err((Some(store), _)) => store,
                 Err((None, err)) => return Err(err.into()),
             };
-            assert!(!config.root_store.is_empty(), "no CA certificates found");
+            assert!(
+                !config.root_store.is_empty(),
+                "no CA certificates found"
+            );
             Ok(Self::Rustls(Arc::new(config)))
         }
     }
 
-    #[allow(clippy::match_wildcard_for_single_variants)]
-    #[allow(clippy::unnecessary_wraps)]
-    #[allow(unused_variables)]
-    pub(crate) fn wrap(self, domain: &str, stream: StdTcpStream) -> Result<MaybeTlsStream> {
-        let inner = match self {
-            Self::Plain => MaybeTlsStreamInner::Plain(stream),
-            #[cfg(feature = "ssl-native-tls")]
-            Self::NativeTls(connector) => {
-                MaybeTlsStreamInner::NativeTls(connector.connect(domain, stream)?)
-            }
-            #[cfg(feature = "__ssl-rustls")]
-            Self::Rustls(client_config) => {
-                let session = rustls::ClientSession::new(
-                    &client_config,
-                    webpki::DNSNameRef::try_from_ascii_str(domain)?,
-                );
-                MaybeTlsStreamInner::Rustls(rustls::StreamOwned::new(session, stream))
-            }
-        };
+    // #[allow(clippy::match_wildcard_for_single_variants)]
+    // #[allow(clippy::unnecessary_wraps)]
+    // #[allow(unused_variables)]
+    // pub(crate) fn wrap(
+    //     self,
+    //     domain: &str,
+    //     stream: StdTcpStream,
+    // ) -> Result<MaybeTlsStream> {
+    //     let inner = match self {
+    //         Self::Plain => MaybeTlsStreamInner::Plain(stream),
+    //         #[cfg(feature = "ssl-native-tls")]
+    //         Self::NativeTls(connector) => MaybeTlsStreamInner::NativeTls(connector.connect(domain, stream)?),
+    //         #[cfg(feature = "__ssl-rustls")]
+    //         Self::Rustls(client_config) => {
+    //             let session = rustls::ClientSession::new(
+    //                 &client_config,
+    //                 webpki::DNSNameRef::try_from_ascii_str(domain)?,
+    //             );
+    //             MaybeTlsStreamInner::Rustls(rustls::StreamOwned::new(
+    //                 session, stream,
+    //             ))
+    //         }
+    //     };
 
-        Ok(MaybeTlsStream { inner })
-    }
+    //     Ok(MaybeTlsStream { inner })
+    // }
 }
 
 impl AsyncConnector {
@@ -268,7 +290,9 @@ impl AsyncConnector {
         }
         #[cfg(feature = "ssl-native-tls")]
         {
-            Ok(Self::NativeTls(native_tls::TlsConnector::new()?.into()))
+            Ok(Self::NativeTls(
+                native_tls::TlsConnector::new()?.into(),
+            ))
         }
         #[cfg(feature = "ssl-rustls-webpki-roots")]
         {
@@ -286,7 +310,10 @@ impl AsyncConnector {
                 Ok(store) | Err((Some(store), _)) => store,
                 Err((None, err)) => return Err(err.into()),
             };
-            assert!(!config.root_store.is_empty(), "no CA certificates found");
+            assert!(
+                !config.root_store.is_empty(),
+                "no CA certificates found"
+            );
             let connector = tokio_rustls::TlsConnector::from(Arc::new(config));
             Ok(Self::Rustls(connector))
         }
@@ -303,13 +330,14 @@ impl AsyncConnector {
         let inner = match self {
             Self::Plain => AsyncMaybeTlsStreamInner::Plain(stream),
             #[cfg(feature = "ssl-native-tls")]
-            Self::NativeTls(connector) => {
-                AsyncMaybeTlsStreamInner::NativeTls(connector.connect(domain, stream).await?)
-            }
+            Self::NativeTls(connector) => AsyncMaybeTlsStreamInner::NativeTls(connector.connect(domain, stream).await?),
             #[cfg(feature = "__ssl-rustls")]
             Self::Rustls(connector) => AsyncMaybeTlsStreamInner::Rustls(
                 connector
-                    .connect(webpki::DNSNameRef::try_from_ascii_str(domain)?, stream)
+                    .connect(
+                        webpki::DNSNameRef::try_from_ascii_str(domain)?,
+                        stream,
+                    )
                     .await?,
             ),
         };

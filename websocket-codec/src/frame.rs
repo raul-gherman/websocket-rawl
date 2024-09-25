@@ -60,7 +60,11 @@ impl TryFrom<DataLength> for u64 {
                 }
 
                 if n >= 0x8000_0000_0000_0000 {
-                    return Err(format!("frame is too long: {} bytes ({:x})", n, n).into());
+                    return Err(format!(
+                        "frame is too long: {} bytes ({:x})",
+                        n, n
+                    )
+                    .into());
                 }
 
                 Ok(n as u64)
@@ -110,7 +114,13 @@ pub struct FrameHeader {
 impl FrameHeader {
     /// Returns a `FrameHeader` struct.
     #[must_use]
-    pub fn new(fin: bool, rsv: u8, opcode: u8, mask: Option<Mask>, data_len: DataLength) -> Self {
+    pub fn new(
+        fin: bool,
+        rsv: u8,
+        opcode: u8,
+        mask: Option<Mask>,
+        data_len: DataLength,
+    ) -> Self {
         Self {
             fin,
             rsv,
@@ -194,7 +204,9 @@ impl FrameHeader {
 
                 (
                     &buf[10..],
-                    DataLength::Large(BigEndian::read_u64(&buf[2..10])),
+                    DataLength::Large(BigEndian::read_u64(
+                        &buf[2..10],
+                    )),
                 )
             }
             126 => {
@@ -206,12 +218,17 @@ impl FrameHeader {
 
                 (
                     &buf[4..],
-                    DataLength::Medium(BigEndian::read_u16(&buf[2..4])),
+                    DataLength::Medium(BigEndian::read_u16(
+                        &buf[2..4],
+                    )),
                 )
             }
             n => {
                 assert!(n < 126);
-                (&buf[2..], DataLength::Small(n))
+                (
+                    &buf[2..],
+                    DataLength::Small(n),
+                )
             }
         };
 
@@ -234,11 +251,17 @@ impl FrameHeader {
             data_len,
         };
 
-        debug_assert_eq!(header.header_len(), header_len);
+        debug_assert_eq!(
+            header.header_len(),
+            header_len
+        );
         Some((header, header_len))
     }
 
-    pub(crate) fn write_to_slice(&self, dst: &mut [u8]) {
+    pub(crate) fn write_to_slice(
+        &self,
+        dst: &mut [u8],
+    ) {
         let FrameHeader {
             fin,
             rsv,
@@ -281,7 +304,10 @@ impl FrameHeader {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    pub(crate) fn write_to_bytes(&self, dst: &mut BytesMut) {
+    pub(crate) fn write_to_bytes(
+        &self,
+        dst: &mut BytesMut,
+    ) {
         let data_len = match self.data_len {
             DataLength::Small(n) => n as usize,
             DataLength::Medium(n) => n as usize,
@@ -312,7 +338,10 @@ impl Decoder for FrameHeaderCodec {
     type Item = FrameHeader;
     type Error = Error;
 
-    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<FrameHeader>> {
+    fn decode(
+        &mut self,
+        src: &mut BytesMut,
+    ) -> Result<Option<FrameHeader>> {
         use bytes::Buf;
 
         Ok(
@@ -327,7 +356,11 @@ impl Decoder for FrameHeaderCodec {
 impl Encoder<FrameHeader> for FrameHeaderCodec {
     type Error = Error;
 
-    fn encode(&mut self, item: FrameHeader, dst: &mut BytesMut) -> Result<()> {
+    fn encode(
+        &mut self,
+        item: FrameHeader,
+        dst: &mut BytesMut,
+    ) -> Result<()> {
         self.encode(&item, dst)
     }
 }
@@ -335,7 +368,11 @@ impl Encoder<FrameHeader> for FrameHeaderCodec {
 impl<'a> Encoder<&'a FrameHeader> for FrameHeaderCodec {
     type Error = Error;
 
-    fn encode(&mut self, item: &'a FrameHeader, dst: &mut BytesMut) -> Result<()> {
+    fn encode(
+        &mut self,
+        item: &'a FrameHeader,
+        dst: &mut BytesMut,
+    ) -> Result<()> {
         item.write_to_bytes(dst);
         Ok(())
     }

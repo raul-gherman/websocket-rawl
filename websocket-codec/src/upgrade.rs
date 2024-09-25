@@ -26,12 +26,20 @@ fn header<'a, 'header: 'a>(
     let header = headers
         .iter()
         .find(|header| header.name.eq_ignore_ascii_case(name))
-        .ok_or_else(|| format!("server didn't respond with {name} header", name = name))?;
+        .ok_or_else(|| {
+            format!(
+                "server didn't respond with {name} header",
+                name = name
+            )
+        })?;
 
     Ok(header.value)
 }
 
-fn validate_server_response(expected_ws_accept: &Sha1Digest, data: &[u8]) -> Result<Option<usize>> {
+fn validate_server_response(
+    expected_ws_accept: &Sha1Digest,
+    data: &[u8],
+) -> Result<Option<usize>> {
     let mut headers = [httparse::EMPTY_HEADER; 20];
     let mut response = Response::new(&mut headers);
     let status = response.parse(data)?;
@@ -42,16 +50,27 @@ fn validate_server_response(expected_ws_accept: &Sha1Digest, data: &[u8]) -> Res
     let response_len = status.unwrap();
     let code = response.code.unwrap();
     if code != 101 {
-        let mut error_message = format!("server responded with HTTP error {code}", code = code);
+        let mut error_message = format!(
+            "server responded with HTTP error {code}",
+            code = code
+        );
 
         if let Some(reason) = response.reason {
-            write!(error_message, ": {:?}", reason).expect("formatting reason failed");
+            write!(
+                error_message,
+                ": {:?}",
+                reason
+            )
+            .expect("formatting reason failed");
         }
 
         return Err(error_message.into());
     }
 
-    let ws_accept_header = header(response.headers, "Sec-WebSocket-Accept")?;
+    let ws_accept_header = header(
+        response.headers,
+        "Sec-WebSocket-Accept",
+    )?;
     let mut ws_accept = Sha1Digest::default();
     base64::engine::GeneralPurpose::decode_slice(
         &base64::engine::general_purpose::STANDARD,
@@ -61,8 +80,14 @@ fn validate_server_response(expected_ws_accept: &Sha1Digest, data: &[u8]) -> Res
     if expected_ws_accept != &ws_accept {
         return Err(format!(
             "server responded with incorrect Sec-WebSocket-Accept header: expected {expected}, got {actual}",
-            expected = Base64Display::new(expected_ws_accept, &base64::engine::general_purpose::STANDARD),
-            actual = Base64Display::new(&ws_accept, &base64::engine::general_purpose::STANDARD),
+            expected = Base64Display::new(
+                expected_ws_accept,
+                &base64::engine::general_purpose::STANDARD
+            ),
+            actual = Base64Display::new(
+                &ws_accept,
+                &base64::engine::general_purpose::STANDARD
+            ),
         )
         .into());
     }
@@ -70,7 +95,10 @@ fn validate_server_response(expected_ws_accept: &Sha1Digest, data: &[u8]) -> Res
     Ok(Some(response_len))
 }
 
-fn contains_ignore_ascii_case(mut haystack: &[u8], needle: &[u8]) -> bool {
+fn contains_ignore_ascii_case(
+    mut haystack: &[u8],
+    needle: &[u8],
+) -> bool {
     if needle.is_empty() {
         return true;
     }
@@ -102,7 +130,12 @@ impl ClientRequest {
         F: Fn(&'static str) -> Option<&'a str> + 'a,
     {
         let header = |name| {
-            header(name).ok_or_else(|| format!("client didn't provide {name} header", name = name))
+            header(name).ok_or_else(|| {
+                format!(
+                    "client didn't provide {name} header",
+                    name = name
+                )
+            })
         };
 
         let check_header = |name, expected| {
@@ -121,7 +154,10 @@ impl ClientRequest {
 
         let check_header_contains = |name, expected: &str| {
             let actual = header(name)?;
-            if contains_ignore_ascii_case(actual.as_bytes(), expected.as_bytes()) {
+            if contains_ignore_ascii_case(
+                actual.as_bytes(),
+                expected.as_bytes(),
+            ) {
                 Ok(())
             } else {
                 Err(format!(
@@ -143,7 +179,10 @@ impl ClientRequest {
     }
 
     /// Copies the value that the client expects to see in the server's `Sec-WebSocket-Accept` header into a `String`.
-    pub fn ws_accept_buf(&self, s: &mut String) {
+    pub fn ws_accept_buf(
+        &self,
+        s: &mut String,
+    ) {
         base64::engine::GeneralPurpose::encode_string(
             &base64::engine::general_purpose::STANDARD,
             &self.ws_accept,
@@ -182,7 +221,10 @@ impl Decoder for UpgradeCodec {
     type Item = ();
     type Error = Error;
 
-    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<()>> {
+    fn decode(
+        &mut self,
+        src: &mut BytesMut,
+    ) -> Result<Option<()>> {
         if let Some(response_len) = validate_server_response(&self.ws_accept, src)? {
             src.advance(response_len);
             Ok(Some(()))
@@ -195,7 +237,11 @@ impl Decoder for UpgradeCodec {
 impl Encoder<()> for UpgradeCodec {
     type Error = Error;
 
-    fn encode(&mut self, _item: (), _dst: &mut BytesMut) -> Result<()> {
+    fn encode(
+        &mut self,
+        _item: (),
+        _dst: &mut BytesMut,
+    ) -> Result<()> {
         unimplemented!()
     }
 }
@@ -206,16 +252,23 @@ mod tests {
 
     #[test]
     fn does_not_contain() {
-        assert!(!contains_ignore_ascii_case(b"World", b"hello"));
+        assert!(!contains_ignore_ascii_case(
+            b"World", b"hello"
+        ));
     }
 
     #[test]
     fn contains_exact() {
-        assert!(contains_ignore_ascii_case(b"Hello", b"hello"));
+        assert!(contains_ignore_ascii_case(
+            b"Hello", b"hello"
+        ));
     }
 
     #[test]
     fn contains_substring() {
-        assert!(contains_ignore_ascii_case(b"Hello World", b"hello"));
+        assert!(contains_ignore_ascii_case(
+            b"Hello World",
+            b"hello"
+        ));
     }
 }

@@ -28,7 +28,10 @@ impl Message {
     /// - For [`Opcode::Text`] it returns `Err` if the bytes in `data` do not contain valid UTF-8 text.
     /// - For [`Opcode::Close`] it returns `Err` if `data` does not contain a two-byte close code
     ///   followed by valid UTF-8 text, unless `data` is empty.
-    pub fn new<B: Into<Bytes>>(opcode: Opcode, data: B) -> Result<Self> {
+    pub fn new<B: Into<Bytes>>(
+        opcode: Opcode,
+        data: B,
+    ) -> Result<Self> {
         let data = data.into();
 
         match opcode {
@@ -66,7 +69,10 @@ impl Message {
         }
     }
 
-    pub(crate) fn header(&self, mask: Option<Mask>) -> FrameHeader {
+    pub(crate) fn header(
+        &self,
+        mask: Option<Mask>,
+    ) -> FrameHeader {
         FrameHeader {
             fin: true,
             rsv: 0,
@@ -89,7 +95,10 @@ impl Message {
     /// Creates a message that indicates the connection is about to be closed.
     /// The close frame contains a code and a text reason.
     #[must_use]
-    pub fn close_with_reason(code: CloseCode, mut reason: String) -> Self {
+    pub fn close_with_reason(
+        code: CloseCode,
+        mut reason: String,
+    ) -> Self {
         // Shorten the string so that 2 + reason.len() fits under the limit for control frames
         let reason_len = truncate_floor_char_boundary(&mut reason, 123);
 
@@ -199,7 +208,10 @@ impl MessageCodec {
     }
 }
 
-fn truncate_floor_char_boundary(s: &mut String, new_len: usize) -> usize {
+fn truncate_floor_char_boundary(
+    s: &mut String,
+    new_len: usize,
+) -> usize {
     // TODO call str::floor_char_boundary when stable
     let mut len = s.len();
     if len > new_len {
@@ -219,14 +231,17 @@ impl Decoder for MessageCodec {
     type Item = Message;
     type Error = Error;
 
-    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Message>> {
+    fn decode(
+        &mut self,
+        src: &mut BytesMut,
+    ) -> Result<Option<Message>> {
         let mut state = self.interrupted_message.take();
         let (opcode, data) = loop {
             let (header, header_len) = if let Some(tuple) = FrameHeader::parse_slice(src) {
                 tuple
             } else {
-                // The buffer isn't big enough for the frame header. Reserve additional space for a frame header,
-                // plus reasonable extensions.
+                // The buffer isn't big enough for the frame header.
+                // Reserve additional space for a frame header, plus reasonable extensions.
                 src.reserve(512);
                 self.interrupted_message = state;
                 return Ok(None);
@@ -235,21 +250,22 @@ impl Decoder for MessageCodec {
             let data_len = usize::try_from(header.data_len)?;
             let frame_len = header_len + data_len;
             if frame_len > src.remaining() {
-                // The buffer contains the frame header but it's not big enough for the data. Reserve additional
-                // space for the frame data, plus the next frame header.
+                // The buffer contains the frame header but it's not big enough for the data.
+                // Reserve additional space for the frame data, plus the next frame header.
                 // Note that we guard against bad data that indicates an unreasonable frame length.
 
-                // If we reserved buffer space for the entire frame data in a single call, would the buffer exceed
-                // usize::MAX bytes in size?
-                // On a 64-bit platform we should not reach here as the usize::try_from line above enforces the
-                // max payload length detailed in the RFC of 2^63 bytes.
+                // If we reserved buffer space for the entire frame data in a single call, would the buffer exceed usize::MAX bytes in size?
+                // On a 64-bit platform we should not reach here as the usize::try_from line above enforces the max payload length detailed in the RFC of 2^63 bytes.
                 if frame_len > usize::MAX - src.remaining() {
-                    return Err(format!("frame is too long: {0} bytes ({0:x})", frame_len).into());
+                    return Err(format!(
+                        "frame is too long: {0} bytes ({0:x})",
+                        frame_len
+                    )
+                    .into());
                 }
 
-                // We don't really reserve space for the entire frame data in a single call. If somebody is sending
-                // more than a gigabyte of data in a single frame then we'll still try to receive it, we'll just
-                // reserve in 1GB chunks.
+                // We don't really reserve space for the entire frame data in a single call.
+                // If somebody is sending more than a gigabyte of data in a single frame then we'll still try to receive it, we'll just reserve in 1GB chunks.
                 src.reserve(frame_len.min(0x4000_0000) + 512);
 
                 self.interrupted_message = state;
@@ -269,7 +285,11 @@ impl Decoder for MessageCodec {
             } = header;
 
             if rsv != 0 {
-                return Err(format!("reserved bits are not supported: 0x{:x}", rsv).into());
+                return Err(format!(
+                    "reserved bits are not supported: 0x{:x}",
+                    rsv
+                )
+                .into());
             }
 
             if let Some(mask) = mask {
@@ -281,8 +301,12 @@ impl Decoder for MessageCodec {
             let opcode = if opcode == 0 {
                 None
             } else {
-                let opcode = Opcode::try_from(opcode)
-                    .ok_or_else(|| format!("opcode {} is not supported", opcode))?;
+                let opcode = Opcode::try_from(opcode).ok_or_else(|| {
+                    format!(
+                        "opcode {} is not supported",
+                        opcode
+                    )
+                })?;
                 if opcode.is_control() && data_len >= 126 {
                     return Err(format!(
                         "control frames must be shorter than 126 bytes ({} bytes is too long)",
@@ -328,14 +352,21 @@ impl Decoder for MessageCodec {
             }
         };
 
-        Ok(Some(Message::new(opcode, data.freeze())?))
+        Ok(Some(Message::new(
+            opcode,
+            data.freeze(),
+        )?))
     }
 }
 
 impl Encoder<Message> for MessageCodec {
     type Error = Error;
 
-    fn encode(&mut self, item: Message, dst: &mut BytesMut) -> Result<()> {
+    fn encode(
+        &mut self,
+        item: Message,
+        dst: &mut BytesMut,
+    ) -> Result<()> {
         self.encode(&item, dst)
     }
 }
@@ -343,12 +374,12 @@ impl Encoder<Message> for MessageCodec {
 impl<'a> Encoder<&'a Message> for MessageCodec {
     type Error = Error;
 
-    fn encode(&mut self, item: &Message, dst: &mut BytesMut) -> Result<()> {
-        let mask = if self.use_mask {
-            Some(Mask::new())
-        } else {
-            None
-        };
+    fn encode(
+        &mut self,
+        item: &Message,
+        dst: &mut BytesMut,
+    ) -> Result<()> {
+        let mask = if self.use_mask { Some(Mask::new()) } else { None };
         let header = item.header(mask);
         header.write_to_bytes(dst);
 
@@ -360,7 +391,11 @@ impl<'a> Encoder<&'a Message> for MessageCodec {
                 dst.set_len(offset + item.data.len());
             }
 
-            mask::mask_slice_copy(&mut dst[offset..], &item.data, mask);
+            mask::mask_slice_copy(
+                &mut dst[offset..],
+                &item.data,
+                mask,
+            );
         } else {
             dst.put_slice(&item.data);
         }

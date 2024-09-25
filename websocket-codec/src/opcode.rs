@@ -23,7 +23,10 @@ impl Opcode {
     /// Returns `true` if `self` is `Close`, `Ping` or `Pong`.
     #[must_use]
     pub fn is_control(self) -> bool {
-        matches!(self, Self::Close | Self::Ping | Self::Pong)
+        matches!(
+            self,
+            Self::Close | Self::Ping | Self::Pong
+        )
     }
 
     /// Converts `u8` to `Opcode`.

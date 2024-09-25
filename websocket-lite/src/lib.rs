@@ -17,10 +17,14 @@
 
 mod client;
 mod ssl;
-mod sync;
 
 pub use crate::client::ClientBuilder;
-pub use crate::ssl::{AsyncConnector, AsyncMaybeTlsStream, Connector, MaybeTlsStream};
+pub use crate::ssl::{
+    AsyncConnector,
+    AsyncMaybeTlsStream,
+    Connector,
+    // MaybeTlsStream
+};
 
 pub use websocket_codec::{CloseCode, CloseFrame, Error, Message, MessageCodec, Opcode, Result};
 
@@ -28,6 +32,3 @@ use tokio_util::codec::Framed;
 
 /// Exposes a `Sink` and a `Stream` for sending and receiving WebSocket messages asynchronously.
 pub type AsyncClient<S> = Framed<S, MessageCodec>;
-
-/// Sends and receives WebSocket messages synchronously.
-pub type Client<S> = sync::Framed<S, MessageCodec>;

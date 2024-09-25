@@ -47,7 +47,6 @@ impl TryFrom<DataLength> for u64 {
                     )
                     .into());
                 }
-
                 Ok(u64::from(n))
             }
             DataLength::Large(n) => {

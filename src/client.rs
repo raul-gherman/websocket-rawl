@@ -106,7 +106,6 @@ fn build_request(
 }
 
 /// Establishes a WebSocket connection.
-///
 /// `ws://...` and `wss://...` URLs are supported.
 pub struct ClientBuilder {
     url: Url,
@@ -118,9 +117,6 @@ pub struct ClientBuilder {
 
 impl ClientBuilder {
     /// Creates a `ClientBuilder` that connects to a given WebSocket URL.
-    ///
-    /// # Errors
-    ///
     /// This method returns an `Err` result if URL parsing fails.
     pub fn new(url: &str) -> result::Result<Self, url::ParseError> {
         Ok(Self::from_url(Url::parse(
@@ -129,7 +125,6 @@ impl ClientBuilder {
     }
 
     /// Creates a `ClientBuilder` that connects to a given WebSocket URL.
-    ///
     /// This method never fails as the URL has already been parsed.
     #[must_use]
     pub fn from_url(url: Url) -> Self {
@@ -179,9 +174,6 @@ impl ClientBuilder {
     ///
     /// `wss://...` URLs are not supported by this method. Use `async_connect` if you need to be able to handle
     /// both `ws://...` and `wss://...` URLs.
-    ///
-    /// # Errors
-    ///
     /// This method returns an `Err` result if connecting to the server fails.
     pub async fn async_connect_insecure(self) -> Result<AsyncClient<TokioTcpStream>> {
         let addr = resolve(&self.url)?;
@@ -190,9 +182,6 @@ impl ClientBuilder {
     }
 
     /// Establishes a connection to the WebSocket server.
-    ///
-    /// # Errors
-    ///
     /// This method returns an `Err` result if connecting to the server fails.
     pub async fn async_connect(mut self) -> Result<AsyncClient<AsyncMaybeTlsStream>> {
         let addr = resolve(&self.url)?;
@@ -216,9 +205,6 @@ impl ClientBuilder {
     ///
     /// This method assumes that the TLS connection has already been established, if needed. It sends an HTTP
     /// `Connection: Upgrade` request and waits for an HTTP OK response before proceeding.
-    ///
-    /// # Errors
-    ///
     /// This method returns an `Err` result if writing or reading from the stream fails.
     pub async fn async_connect_on<S: AsyncRead + AsyncWrite + Unpin>(
         self,

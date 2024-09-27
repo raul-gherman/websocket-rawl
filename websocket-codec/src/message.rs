@@ -190,13 +190,13 @@ impl MessageCodec {
         Self::with_masked_encode(true)
     }
 
-    /// Creates a `MessageCodec` for a server.
-    ///
-    /// Encoded messages are not masked.
-    #[must_use]
-    pub fn server() -> Self {
-        Self::with_masked_encode(false)
-    }
+    // /// Creates a `MessageCodec` for a server.
+    // ///
+    // /// Encoded messages are not masked.
+    // #[must_use]
+    // pub fn server() -> Self {
+    //     Self::with_masked_encode(false)
+    // }
 
     /// Creates a `MessageCodec` while specifying whether to use message masking while encoding.
     #[must_use]

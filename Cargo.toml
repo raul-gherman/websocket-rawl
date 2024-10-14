@@ -1,20 +1,20 @@
 [package]
 name = "websocket-rawl"
-description = "A fast, low-overhead WebSocket client"
-version = "0.1.20240927"
+description = "Low-overhead WebSocket client"
+version = "0.1.20241014"
 edition = "2021"
 
 [dependencies]
 base64 = "0.22"
-bytes = "1"
+bytes = "1.7"
 futures-util = { version = "0.3", default-features = false }
 native-tls = "0.2"
 rand = "0.8"
-tokio = { version = "1", default-features = false, features = [
+tokio = { version = "1.40", default-features = false, features = [
     "net",
     "io-util",
 ] }
 tokio-native-tls = "0.3"
 tokio-util = { version = "0.7", default-features = false, features = ["codec"] }
 url = "2"
-websocket-codec = { version = "0.1.20240924", path = "./websocket-codec" }
+websocket-codec = { version = "0.1.20241014", path = "./websocket-codec" }

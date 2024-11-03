@@ -15,12 +15,24 @@ mod upgrade;
 
 pub mod protocol;
 
-pub use crate::close::{CloseCode, CloseFrame};
-pub use crate::message::{Message, MessageCodec};
+pub use crate::close::{
+	CloseCode,
+	CloseFrame,
+};
+pub use crate::message::{
+	Message,
+	MessageCodec,
+};
 pub use crate::opcode::Opcode;
-pub use crate::upgrade::{ClientRequest, UpgradeCodec};
+pub use crate::upgrade::{
+	ClientRequest,
+	UpgradeCodec,
+};
 
-use std::{error, result};
+use std::{
+	error,
+	result,
+};
 
 /// Represents errors that can be exposed by this crate.
 pub type Error = Box<dyn error::Error + Send + Sync + 'static>;

@@ -1,7 +1,7 @@
 [package]
 name = "websocket-codec"
 description = "A Tokio codec for the websocket protocol"
-version = "0.1.20241014"
+version = "0.1.20241103"
 edition = "2021"
 
 [dependencies]

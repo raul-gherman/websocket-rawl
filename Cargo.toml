@@ -17,4 +17,4 @@ tokio = { version = "1.41", default-features = false, features = [
 tokio-native-tls = "0.3"
 tokio-util = { version = "0.7", default-features = false, features = ["codec"] }
 url = "2"
-websocket-codec = { path = "./websocket-codec" }
+websocket-codec = { version = "0.1.20241103", path = "./websocket-codec" }

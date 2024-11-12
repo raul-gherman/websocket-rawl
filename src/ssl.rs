@@ -50,7 +50,7 @@ impl Debug for AsyncConnector {
 	}
 }
 
-#[allow(clippy::large_enum_variant)]
+// #[allow(clippy::large_enum_variant)]
 enum AsyncMaybeTlsStreamInner {
 	Plain(TokioTcpStream),
 	NativeTls(tokio_native_tls::TlsStream<TokioTcpStream>),
@@ -110,7 +110,7 @@ impl AsyncWrite for AsyncMaybeTlsStream {
 impl Connector {
 	/// Creates a new `Connector` with the underlying TLS library specified in the feature flags.
 	/// This method returns an `Err` when creating the underlying TLS connector fails.
-	#[allow(clippy::unnecessary_wraps)]
+	// #[allow(clippy::unnecessary_wraps)]
 	pub fn new_with_default_tls_config() -> Result<Self> {
 		Ok(Self::NativeTls(
 			native_tls::TlsConnector::new()?,
@@ -121,16 +121,16 @@ impl Connector {
 impl AsyncConnector {
 	/// Creates a new async `Connector` with the underlying TLS library specified in the feature flags.
 	/// This method returns an `Err` when creating the underlying TLS connector fails.
-	#[allow(clippy::unnecessary_wraps)]
+	// #[allow(clippy::unnecessary_wraps)]
 	pub fn new_with_default_tls_config() -> Result<Self> {
 		Ok(Self::NativeTls(
 			native_tls::TlsConnector::new()?.into(),
 		))
 	}
 
-	#[allow(clippy::match_wildcard_for_single_variants)]
-	#[allow(clippy::unnecessary_wraps)]
-	#[allow(unused_variables)]
+	// #[allow(clippy::match_wildcard_for_single_variants)]
+	// #[allow(clippy::unnecessary_wraps)]
+	// #[allow(unused_variables)]
 	pub(crate) async fn wrap(
 		self,
 		domain: &str,

@@ -1,20 +1,3 @@
-use std::convert::TryFrom;
-use std::{
-	str,
-	usize,
-};
-
-use bytes::{
-	Buf,
-	BufMut,
-	Bytes,
-	BytesMut,
-};
-use tokio_util::codec::{
-	Decoder,
-	Encoder,
-};
-
 use crate::close::{
 	CloseCode,
 	CloseFrame,
@@ -26,6 +9,21 @@ use crate::{
 	mask,
 	Error,
 	Result,
+};
+use bytes::{
+	Buf,
+	BufMut,
+	Bytes,
+	BytesMut,
+};
+use std::convert::TryFrom;
+use std::{
+	str,
+	usize,
+};
+use tokio_util::codec::{
+	Decoder,
+	Encoder,
 };
 
 /// A text string, a block of binary data or a WebSocket control frame.
@@ -55,9 +53,7 @@ impl Message {
 		match opcode {
 			Opcode::Close => match data.len() {
 				0 => {}
-				1 => {
-					return Err("close frames must be at least 2 bytes long".into());
-				}
+				1 => return Err("close frames must be at least 2 bytes long".into()),
 				_ => {
 					str::from_utf8(&data[2..])?;
 				}

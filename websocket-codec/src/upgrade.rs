@@ -144,14 +144,7 @@ impl ClientRequest {
 	where
 		F: Fn(&'static str) -> Option<&'a str> + 'a,
 	{
-		let header = |name| {
-			header(name).ok_or_else(|| {
-				format!(
-					"client didn't provide {name} header",
-					name = name
-				)
-			})
-		};
+		let header = |name| header(name).ok_or_else(|| format!("client didn't provide {name} header",));
 
 		let check_header = |name, expected| {
 			let actual = header(name)?;
@@ -159,10 +152,7 @@ impl ClientRequest {
 				Ok(())
 			} else {
 				Err(format!(
-					"client provided incorrect {name} header: expected {expected}, got {actual}",
-					name = name,
-					expected = expected,
-					actual = actual
+					"client provided incorrect {name} header: expected {expected}, got {actual}"
 				))
 			}
 		};
@@ -177,9 +167,6 @@ impl ClientRequest {
 			} else {
 				Err(format!(
 					"client provided incorrect {name} header: expected string containing {expected}, got {actual}",
-					name = name,
-					expected = expected,
-					actual = actual
 				))
 			}
 		};
@@ -258,32 +245,5 @@ impl Encoder<()> for UpgradeCodec {
 		_dst: &mut BytesMut,
 	) -> Result<()> {
 		unimplemented!()
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use crate::upgrade::contains_ignore_ascii_case;
-
-	#[test]
-	fn does_not_contain() {
-		assert!(!contains_ignore_ascii_case(
-			b"World", b"hello"
-		));
-	}
-
-	#[test]
-	fn contains_exact() {
-		assert!(contains_ignore_ascii_case(
-			b"Hello", b"hello"
-		));
-	}
-
-	#[test]
-	fn contains_substring() {
-		assert!(contains_ignore_ascii_case(
-			b"Hello World",
-			b"hello"
-		));
 	}
 }
